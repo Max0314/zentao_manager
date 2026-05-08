@@ -1,0 +1,15 @@
+# Web API 框架。
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# 禅道 MariaDB 连接。
+pymysql==1.1.1
+
+# 推送 bi_center 的异步 HTTP 客户端。
+httpx==0.28.1
+
+# 后台定时同步和失败队列重试。
+apscheduler==3.11.0
+
+# 为 python:slim / Windows 等环境补充 IANA 时区数据，保证 Asia/Shanghai 可用。
+tzdata==2025.2
