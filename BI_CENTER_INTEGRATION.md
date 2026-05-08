@@ -238,7 +238,7 @@ Authorization: Bearer <BI_CENTER_TOKEN>
 Authorization: Bearer <MANAGER_API_TOKEN>
 ```
 
-默认 Docker Compose 只把管理端口绑定到 `127.0.0.1:8000`，因为 `bi_center` 不需要反向访问 `zentao_manager`。
+默认 Docker Compose 只把管理端口绑定到 `127.0.0.1:7891`，因为 `bi_center` 不需要反向访问 `zentao_manager`。
 
 ## 7. 积分计算建议
 
@@ -263,20 +263,20 @@ Authorization: Bearer <MANAGER_API_TOKEN>
 3. 在 `zentao_manager` 调用：
 
 ```bash
-curl -H "Authorization: Bearer $MANAGER_API_TOKEN" -X POST http://127.0.0.1:8000/sync/run
+curl -H "Authorization: Bearer $MANAGER_API_TOKEN" -X POST http://127.0.0.1:7891/sync/run
 ```
 
 4. 查看 `bi_center` 是否收到数据。
 5. 查看 `zentao_manager` 状态：
 
 ```bash
-curl -H "Authorization: Bearer $MANAGER_API_TOKEN" http://127.0.0.1:8000/sync/status
+curl -H "Authorization: Bearer $MANAGER_API_TOKEN" http://127.0.0.1:7891/sync/status
 ```
 
 6. 如果失败，调用：
 
 ```bash
-curl -H "Authorization: Bearer $MANAGER_API_TOKEN" -X POST http://127.0.0.1:8000/sync/retry-failed
+curl -H "Authorization: Bearer $MANAGER_API_TOKEN" -X POST http://127.0.0.1:7891/sync/retry-failed
 ```
 
 ## 9. 注意事项

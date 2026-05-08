@@ -52,9 +52,9 @@ ZENTAO_DB_NAME=zentaoep
 ZENTAO_DB_USER=bi_reader
 ZENTAO_DB_PASSWORD=你的只读账号密码
 
-BI_CENTER_URL=http://bi-center.example.com
+BI_CENTER_URL=https://neoflow.neo-net.com/bi_center
 BI_CENTER_TOKEN=
-MANAGER_API_TOKEN=请换成长随机管理token
+MANAGER_API_TOKEN=ZENTAO
 
 INITIAL_SYNC_START=2026-05-01 00:00:00
 SYNC_INTERVAL_MINUTES=60
@@ -94,7 +94,7 @@ docker compose up -d --build
 docker compose logs -f
 ```
 
-默认 `docker-compose.yml` 只把管理端口绑定到宿主机 `127.0.0.1:8000`。本服务会主动推送到 `bi_center`，不需要对公网开放管理端口。需要远程管理时，建议使用 SSH 登录服务器后执行 `curl`，或通过 SSH 隧道访问。
+默认 `docker-compose.yml` 只把管理端口绑定到宿主机 `127.0.0.1:7891`。本服务会主动推送到 `bi_center`，不需要对公网开放管理端口。需要远程管理时，建议使用 SSH 登录服务器后执行 `curl`，或通过 SSH 隧道访问。
 
 ## 管理接口
 
@@ -106,9 +106,9 @@ docker compose logs -f
 本机测试：
 
 ```bash
-curl http://127.0.0.1:8000/health
-curl -H "Authorization: Bearer $MANAGER_API_TOKEN" http://127.0.0.1:8000/sync/status
-curl -H "Authorization: Bearer $MANAGER_API_TOKEN" -X POST http://127.0.0.1:8000/sync/run
+curl http://127.0.0.1:7891/health
+curl -H "Authorization: Bearer $MANAGER_API_TOKEN" http://127.0.0.1:7891/sync/status
+curl -H "Authorization: Bearer $MANAGER_API_TOKEN" -X POST http://127.0.0.1:7891/sync/run
 ```
 
 ## bi_center 对接

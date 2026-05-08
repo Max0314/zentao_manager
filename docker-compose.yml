@@ -5,8 +5,8 @@ services:
     container_name: zentao-manager
     restart: unless-stopped
     ports:
-      # 宿主机 8000 -> 容器 8000，用于健康检查、手动同步和失败重试接口。
-      - "127.0.0.1:8000:8000"
+      # 宿主机 7891 -> 容器 7891，用于健康检查、手动同步和失败重试接口。
+      - "127.0.0.1:7891:7891"
     env_file:
       # .env 允许不存在，方便首次 docker compose config 检查。
       - path: .env
@@ -17,7 +17,7 @@ services:
       # SQLite 状态库保存到宿主机 data 目录，容器重建后游标和失败队列不丢。
       - ./data:/app/data
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7891/health', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3
