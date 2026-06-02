@@ -56,10 +56,11 @@ BI_CENTER_URL=https://neoflow.neo-net.com/bi_center
 BI_CENTER_TOKEN=
 MANAGER_API_TOKEN=ZENTAO
 
-INITIAL_SYNC_START=2026-05-01 00:00:00
+INITIAL_SYNC_START=2026-03-01 00:00:00
 SYNC_INTERVAL_MINUTES=60
 BATCH_SIZE=1000
 MAX_BATCHES_PER_STREAM=1
+SNAPSHOT_MAX_BATCHES_PER_STREAM=1
 SYNC_STREAMS=actions,aiscore_results,tasks,bugs,stories,users,depts,aiscore_rules,ai_prompts,pivot_configs,cases,docs
 ```
 
@@ -80,7 +81,7 @@ SYNC_STREAMS=actions,aiscore_results,tasks,bugs,stories,users,depts,aiscore_rule
 | `cases` | `zt_case` | `/api/zentao/cases/batch` | 用例创建分维度 |
 | `docs` | `zt_doc` | `/api/zentao/docs/batch` | 原创文档创建分维度 |
 
-`MAX_BATCHES_PER_STREAM` 控制每个数据流每轮最多同步几个批次。初次补数如果想更快，可以临时调大，例如 `10`；稳定运行后再调回 `1` 或较小值，减少对禅道库和 `bi_center` 的压力。
+`MAX_BATCHES_PER_STREAM` 控制事件流每轮最多同步几个批次。`SNAPSHOT_MAX_BATCHES_PER_STREAM` 控制快照流每轮最多同步几个批次；任务、Bug、用例、文档等快照落后时，可以临时调到 `20` 追数，稳定后再调回 `5`、`10` 或 `1`，减少对禅道库和 `bi_center` 的压力。
 
 ## 启动
 
@@ -101,6 +102,7 @@ docker compose logs -f
 - `GET /health`
 - `GET /sync/status`
 - `POST /sync/run`
+- `POST /sync/backfill`
 - `POST /sync/retry-failed`
 
 本机测试：
@@ -109,6 +111,13 @@ docker compose logs -f
 curl http://127.0.0.1:7891/health
 curl -H "Authorization: Bearer $MANAGER_API_TOKEN" http://127.0.0.1:7891/sync/status
 curl -H "Authorization: Bearer $MANAGER_API_TOKEN" -X POST http://127.0.0.1:7891/sync/run
+```
+
+手动回填示例。适用于首次上线时 `INITIAL_SYNC_START` 设得过晚，或快照流还没有扫到近期 `zt_task` / `zt_bug` 主键的情况。`bi_center` 端按主键 upsert，重复推送不会重复计分。
+
+```bash
+curl -H "Authorization: Bearer $MANAGER_API_TOKEN" -X POST \
+  "http://127.0.0.1:7891/sync/backfill?initial_sync_start=2026-03-01%2000:00:00&streams=actions,aiscore_results,tasks,bugs&max_batches_per_stream=120&reset_cursors=true"
 ```
 
 ## bi_center 对接

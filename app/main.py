@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from fastapi import Depends, FastAPI, Header, HTTPException, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, status
 
 from app.bi_client import BiCenterClient
 from app.config import load_settings
@@ -102,6 +102,26 @@ async def sync_status():
 async def run_sync():
     """手动触发一次同步，适合部署后验证或临时补推。"""
     return await sync_service.run_once(run_type="manual")
+
+
+@app.post("/sync/backfill", dependencies=[Depends(require_manager_token)])
+async def run_backfill(
+    initial_sync_start: str = Query(default="2026-03-01 00:00:00"),
+    streams: str = Query(default="actions,aiscore_results,tasks,bugs"),
+    max_batches_per_stream: int = Query(default=120, ge=1, le=500),
+    reset_cursors: bool = Query(default=True),
+):
+    """手动回填指定数据流。
+
+    典型用法：回补 2026 年 3、4 月禅道 AI 分和任务/Bug 快照。
+    """
+    stream_names = [stream.strip() for stream in streams.split(",") if stream.strip()]
+    return await sync_service.run_backfill(
+        streams=stream_names,
+        initial_sync_start=initial_sync_start,
+        max_batches_per_stream=max_batches_per_stream,
+        reset_cursors=reset_cursors,
+    )
 
 
 @app.post("/sync/retry-failed", dependencies=[Depends(require_manager_token)])

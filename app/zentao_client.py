@@ -188,6 +188,7 @@ STREAM_SPECS: dict[str, StreamSpec] = {
                 u.id AS user_id,
                 u.account,
                 u.realname,
+                u.qq AS job_number,
                 u.type,
                 u.dept AS dept_id,
                 d.name AS dept_name,

@@ -52,7 +52,7 @@ class SyncService:
         async with self._lock:
             stream_results = []
             for stream_name in self.settings.sync_streams:
-                for _ in range(self.settings.max_batches_per_stream):
+                for _ in range(self._max_batches_for_stream(stream_name)):
                     result = await self._run_stream_once(stream_name, run_type)
                     stream_results.append(result)
                     if result["status"] != "success" or result["item_count"] < self.settings.batch_size:
@@ -81,7 +81,80 @@ class SyncService:
                 "streams": stream_results,
             }
 
-    async def _run_stream_once(self, stream_name: str, run_type: str) -> dict[str, Any]:
+    def _max_batches_for_stream(self, stream_name: str) -> int:
+        try:
+            spec = self.zentao_client.get_stream_spec(stream_name)
+        except Exception:
+            return max(1, int(self.settings.max_batches_per_stream or 1))
+        if spec.snapshot:
+            return max(1, int(self.settings.snapshot_max_batches_per_stream or 1))
+        return max(1, int(self.settings.max_batches_per_stream or 1))
+
+    async def run_backfill(
+        self,
+        *,
+        streams: list[str],
+        initial_sync_start: str,
+        max_batches_per_stream: int,
+        reset_cursors: bool = True,
+    ) -> dict[str, Any]:
+        """执行一次手动回填。
+
+        事件流按指定 initial_sync_start 重扫；快照流按主键从头分页重扫。
+        bi_center 端按主键 upsert，因此重推已有行不会重复计分。
+        """
+        safe_streams = [stream.strip() for stream in streams if stream.strip()]
+        if not safe_streams:
+            safe_streams = list(self.settings.sync_streams)
+        safe_max_batches = max(1, min(int(max_batches_per_stream or 1), 500))
+
+        async with self._lock:
+            stream_results = []
+            if reset_cursors:
+                for stream_name in safe_streams:
+                    self.store.reset_cursor(stream_name)
+
+            for stream_name in safe_streams:
+                for _ in range(safe_max_batches):
+                    result = await self._run_stream_once(
+                        stream_name,
+                        "backfill",
+                        initial_sync_start=initial_sync_start,
+                    )
+                    stream_results.append(result)
+                    if result["status"] != "success" or result["item_count"] < self.settings.batch_size:
+                        break
+
+            failed_count = sum(1 for item in stream_results if item["status"] == "failed")
+            queued_count = sum(1 for item in stream_results if item["status"] == "queued_failed")
+            sent_count = sum(1 for item in stream_results if item["status"] == "success" and item["item_count"] > 0)
+            item_count = sum(int(item.get("item_count", 0)) for item in stream_results)
+            if failed_count:
+                status = "partial_failed"
+            elif queued_count:
+                status = "queued_failed"
+            else:
+                status = "success"
+            return {
+                "status": status,
+                "stream_count": len(safe_streams),
+                "batch_result_count": len(stream_results),
+                "sent_batch_count": sent_count,
+                "queued_failed_batch_count": queued_count,
+                "failed_batch_count": failed_count,
+                "item_count": item_count,
+                "initial_sync_start": initial_sync_start,
+                "reset_cursors": reset_cursors,
+                "streams": stream_results,
+            }
+
+    async def _run_stream_once(
+        self,
+        stream_name: str,
+        run_type: str,
+        *,
+        initial_sync_start: str | None = None,
+    ) -> dict[str, Any]:
         """执行单个数据流的一批同步。"""
         try:
             spec = self.zentao_client.get_stream_spec(stream_name)
@@ -98,7 +171,7 @@ class SyncService:
                 self.zentao_client.fetch_stream,
                 stream_name,
                 last_id,
-                self.settings.initial_sync_start,
+                initial_sync_start or self.settings.initial_sync_start,
                 self.settings.batch_size,
             )
         except Exception as exc:

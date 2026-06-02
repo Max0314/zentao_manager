@@ -46,6 +46,7 @@ class Settings:
     sync_interval_minutes: int
     batch_size: int
     max_batches_per_stream: int
+    snapshot_max_batches_per_stream: int
     sync_streams: tuple[str, ...]
 
     # 失败队列重试控制项，防止 bi_center 临时不可用时丢数据。
@@ -80,6 +81,9 @@ def load_settings() -> Settings:
         if stream.strip()
     )
 
+    max_batches_per_stream = _get_int("MAX_BATCHES_PER_STREAM", 1)
+    snapshot_max_batches_per_stream = _get_int("SNAPSHOT_MAX_BATCHES_PER_STREAM", max_batches_per_stream)
+
     return Settings(
         zentao_db_host=os.getenv("ZENTAO_DB_HOST", "10.70.33.18"),
         zentao_db_port=_get_int("ZENTAO_DB_PORT", 3380),
@@ -89,10 +93,11 @@ def load_settings() -> Settings:
         bi_center_url=os.getenv("BI_CENTER_URL", ""),
         bi_center_token=os.getenv("BI_CENTER_TOKEN", ""),
         manager_api_token=os.getenv("MANAGER_API_TOKEN", ""),
-        initial_sync_start=os.getenv("INITIAL_SYNC_START", "2026-05-01 00:00:00"),
+        initial_sync_start=os.getenv("INITIAL_SYNC_START", "2026-03-01 00:00:00"),
         sync_interval_minutes=_get_int("SYNC_INTERVAL_MINUTES", 60),
         batch_size=_get_int("BATCH_SIZE", 1000),
-        max_batches_per_stream=_get_int("MAX_BATCHES_PER_STREAM", 1),
+        max_batches_per_stream=max_batches_per_stream,
+        snapshot_max_batches_per_stream=snapshot_max_batches_per_stream,
         sync_streams=sync_streams,
         failed_retry_interval_minutes=_get_int("FAILED_RETRY_INTERVAL_MINUTES", 10),
         max_failed_retry_batches=_get_int("MAX_FAILED_RETRY_BATCHES", 20),
