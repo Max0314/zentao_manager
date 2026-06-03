@@ -3,3 +3,6 @@ __pycache__/
 .pytest_cache/
 data/
 *.sqlite3
+app/zentao_may_ai_score_with_job_number.csv
+zt_user_identity_key_columns.csv
+zt_user_identity_mapping.csv
